@@ -36,7 +36,7 @@ export const getEmployees = async (req, res) => {
 
 // Create employees
 // POST /api/employees
-export const getEmployees = async (req, res) => {
+export const createEmployees = async (req, res) => {
     try {
         const {
             firstName,
