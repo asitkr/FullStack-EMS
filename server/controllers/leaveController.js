@@ -1,3 +1,4 @@
+import { inngest } from "../inngest/index.js";
 import Employee from "../models/Employee.js";
 import LeaveApplication from "../models/LeaveApplication.js";
 
@@ -57,6 +58,13 @@ export const createLeave = async (req, res) => {
             status: "PENDING",
         })
 
+        await inngest.send({
+            name: "leave/pending",
+            data: {
+                leaveApplicationId: leave._id,
+            }
+        })
+
         return res.status(201).json({
             success: true,
             message: "Leave application submitted successfully",
@@ -109,8 +117,8 @@ export const getLeaves = async (req, res) => {
                 });
             }
 
-            const leaves = await LeaveApplication.find({ 
-                employeeId: employee._id 
+            const leaves = await LeaveApplication.find({
+                employeeId: employee._id
             }).sort({ createdAt: -1 });
 
             return res.status(200).json({
@@ -140,7 +148,7 @@ export const updateLeaveStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-        if(!["APPROVED", "REJECTED", "PENDING"].includes(status)) {
+        if (!["APPROVED", "REJECTED", "PENDING"].includes(status)) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid leave status",

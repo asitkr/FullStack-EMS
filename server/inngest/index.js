@@ -2,6 +2,7 @@ import { Inngest } from "inngest";
 import Attendance from "../models/Attendance.js";
 import Employee from "../models/Employee.js";
 import LeaveApplication from "../models/LeaveApplication.js";
+import sendEmail from "../config/nodemailer.js";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "fullstack-ems-ashit" });
@@ -22,6 +23,20 @@ const autoCheckOut = inngest.createFunction(
             const employee = await Employee.findById(employeeId);
 
             // Send reminder email
+            await sendEmail({
+                to: employee.email,
+                subject: "Attendance Check-Out Reminder",
+                body: `<div style="max-width: 600px;>
+                    <h2>Hi ${employee.firstName},👋</h2>
+                    <p style="font-size: 16px;">You have a check-in in ${employee.department} today:</p>
+                    <p style="font-size: 18px; font-weight: bold; color:#007bff; margin: 8px 0;">${attendance?.checkIn?.toLocaleTimeString()}</p>
+                    <p style="font-size: 16px;">Please make sure to check-out in one hour.</p>
+                    <p style="font-size: 16px;">If you have any questions, please contact your admin.</p>
+                    <br />
+                    <p style="font-size: 16px;">Best Regards,</p>
+                    <p style="font-size: 16px:">EMS</p>
+                </div>`
+            })
 
             // After 10 hours, mark attendance as checked out with status "LATE"
             await step.sleepUntil("Wait-for-the-1-hours", new Date(new Date().getTime() + 1 * 60 * 60 * 1000))
@@ -49,10 +64,23 @@ const leaveApplicationReminder = inngest.createFunction(
         await step.sleepUntil("Wait-for-the-24-hours", new Date(new Date().getTime() + 24 * 60 * 60 * 1000))
 
         const leaveApplication = await LeaveApplication.findById(leaveApplicationId);
-        if(leaveApplication?.status === "PENDING") {
+        if (leaveApplication?.status === "PENDING") {
             const employee = await Employee.findById(leaveApplication.employeeId);
 
             // Send reminder email to admin to take action on leave application
+            await sendEmail({
+                to: process.env.ADMIN_EMAIL,
+                subject: "Leave Application Reminder",
+                body: `<div style="max-width: 600px;>
+                    <h2>Hi Admin,👋</h2>
+                    <p style="font-size: 16px;">You have a leave application in ${employee.department} today:</p>
+                    <p style="font-size: 18px; font-weight: bold; color:#007bff; margin: 8px 0;">${leaveApplication?.startDate?.toLocaleTimeString()}</p>
+                    <p style="font-size: 16px;">Please make sure to take action on this leave application.</p>
+                    <br />
+                    <p style="font-size: 16px;">Best Regards,</p>
+                    <p style="font-size: 16px:">EMS</p>
+                </div>`
+            })
         }
     },
 )
@@ -64,10 +92,10 @@ const attendanceReminder = inngest.createFunction(
     async ({ step }) => {
         // Step 1: Get today's date range (IST)
         const today = await step.run("get-today-date", () => {
-            const startUTC = new Date(new Date().toLocaleDateString("en-CA", {  timeZone: "Asia/Kolkata" }) + "T00:00:00+05:30")
-            const endUTC = new Date(startUTC.getTime() +24 * 60 * 60 * 1000)
+            const startUTC = new Date(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }) + "T00:00:00+05:30")
+            const endUTC = new Date(startUTC.getTime() + 24 * 60 * 60 * 1000)
 
-            return { 
+            return {
                 startUTC: startUTC.toISOString(),
                 endUTC: endUTC.toDateString()
             }
@@ -103,7 +131,7 @@ const attendanceReminder = inngest.createFunction(
         // Step 4: Get employee IDs who already checked in today
         const checkedInIds = await step.run("get-checked-in-ids", async () => {
             const attendance = await Attendance.find({
-                date: { 
+                date: {
                     $gte: new Date(today.startUTC),
                     $lt: new Date(today.endUTC),
                 }
@@ -116,10 +144,25 @@ const attendanceReminder = inngest.createFunction(
         const absentEmployees = activeEmployees.filter((emp) => !onLeaveIds.includes(emp._id) && !checkedInIds.includes(emp._ids))
 
         // Step 6: Send reminder emails
-        if(absentEmployees.length > 0) {
+        if (absentEmployees.length > 0) {
             await step.run("send-reminder-emails", async () => {
-                const emailPromises = absentEmployees.map((emp) => {
+                const emailPromises = absentEmployees.map(async (emp) => {
                     // send email
+                    await sendEmail({
+                        to: emp.email,
+                        subject: "Attendance Reminder - Please Mark Your Attendance",
+                        body: `<div style="max-width: 600px; font-family: Arial, sans-serif;>
+                            <h2>Hi ${emp.firstName},👋</h2>
+                            <p style="font-size: 16px;">We noticed you haven't marked your attendance yet today.</p>
+                            <p style="font-size: 16px;">The deadline was <strong>11:30AM</strong> and your attendance is still missing</p>
+                            <p style="font-size: 16px;">Please check in as soon as possible or contact your admin if you're facing any issues.</p>
+                            <br />
+                            <p style="font-size: 14px; color: #666;">Department: ${emp.department}</p>
+                            <br />
+                            <p style="font-size: 16px;">Best Regards,</p>
+                            <p style="font-size: 16px:"><strong>QuickEMS</strong></p>
+                        </div>`
+                    })
                 })
             })
         }
@@ -128,7 +171,7 @@ const attendanceReminder = inngest.createFunction(
             totalActive: activeEmployees.length,
             onLeave: onLeaveIds.length,
             checkedIn: checkedInIds.length,
-            absent: absentEmployees.length, 
+            absent: absentEmployees.length,
         }
     }
 )
