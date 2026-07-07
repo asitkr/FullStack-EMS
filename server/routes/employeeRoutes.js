@@ -5,7 +5,7 @@ import { createEmployees, deleteEmployees, getEmployees, updateEmployees } from 
 const employeesRouter = Router();
 
 employeesRouter.get("/", protect, protectAdmin, getEmployees);
-employeesRouter.Post("/", protect, protectAdmin, createEmployees);
+employeesRouter.post("/", protect, protectAdmin, createEmployees);
 employeesRouter.put("/:id", protect, protectAdmin, updateEmployees);
 employeesRouter.delete("/:id", protect, protectAdmin, deleteEmployees);
 
