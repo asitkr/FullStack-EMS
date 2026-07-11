@@ -1,8 +1,9 @@
 import { format } from "date-fns";
+import { toast } from "react-hot-toast";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { dummyPayslipData } from "../assets/assets";
 import Loading from "../components/Loading";
+import api from "../api/axios";
 
 const PrintPaySlip = () => {
   const { id } = useParams();
@@ -10,14 +11,19 @@ const PrintPaySlip = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setPayslip(dummyPayslipData?.find((slip) => slip?._id === id));
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+    api
+      .get(`/payslips/${id}`)
+      .then((res) => setPayslip(res.data.data))
+      .catch((err) => {
+        toast.error(err.response?.data?.message || err.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [id]);
 
-  if(loading) return <Loading />
-  if(!payslip) return <p className="text-center py-12 text-slate-400">Payslip not found</p>
+  if (loading) return <Loading />
+  if (!payslip) return <p className="text-center py-12 text-slate-400">Payslip not found</p>
 
   return (
     <div className="max-w-2xl mx-auto p-8 bg-white animate-fade-in">
