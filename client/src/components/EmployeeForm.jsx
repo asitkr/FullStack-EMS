@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { DEPARTMENTS } from '../assets/assets';
+import { toast } from 'react-hot-toast';
 import { Loader2Icon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+import { DEPARTMENTS } from '../assets/assets';
+import api from '../api/axios';
 
 const EmployeeForm = ({ initialData, onSuccess, onCancel }) => {
     const navigate = useNavigate();
@@ -10,6 +13,23 @@ const EmployeeForm = ({ initialData, onSuccess, onCancel }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
+        const formData = new FormData(e.currentTarget);
+        if (isEditMode) {
+            const pwd = formData.get('password');
+            if (!pwd) formData.delete('password');
+        }
+
+        try {
+            const url = isEditMode ? `/employees/${initialData?.id}` : '/employees';
+            const method = isEditMode ? 'put' : 'post';
+            await api[method](url, formData);
+            onSuccess ? onSuccess() : navigate('/employees');
+        } catch (err) {
+            toast.error(err.response?.data?.message  || err.message);
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -63,10 +83,6 @@ const EmployeeForm = ({ initialData, onSuccess, onCancel }) => {
                         <input type="number" name='basicSalary' required min='0' step='0.01' defaultValue={initialData?.basicSalary || 0} />
                     </div>
                     <div>
-                        <label className='block mb-2'>Position</label>
-                        <input type="text" name='position' required defaultValue={initialData?.position} />
-                    </div>
-                    <div>
                         <label className='block mb-2'>Allowances</label>
                         <input type="text" name='allowances' required min='0' step='0.01' defaultValue={initialData?.allowances || 0} />
                     </div>
@@ -95,24 +111,24 @@ const EmployeeForm = ({ initialData, onSuccess, onCancel }) => {
                         <input type="email" name='email' required defaultValue={initialData?.email} />
                     </div>
                     {!isEditMode && (
-                        <div className='sm:col-span-2'>
+                        <div className='sm:col-span-1'>
                             <label className='block mb-2'>Temporary Password</label>
                             <input type="password" name='password' required />
                         </div>
                     )}
                     {isEditMode && (
-                        <div>
+                        <div className='sm:col-span-1'>
                             <label className='block mb-2'>Change Password (Optional)</label>
-                            <input type="password" name='password' required placeholder='Leave blank to keep current' />
+                            <input type="password" name='password' placeholder='Leave blank to keep current' />
                         </div>
                     )}
                     <div>
-                            <label className='block mb-2'>System Role</label>
-                            <select name='role' defaultValue={initialData?.user?.role || 'EMPLOYEE'}>
-                                <option value='EMPLOYEE'>Employee</option>
-                                <option value='ADMIN'>Admin</option>
-                            </select>
-                        </div>
+                        <label className='block mb-2'>System Role</label>
+                        <select name='role' defaultValue={initialData?.user?.role || 'EMPLOYEE'}>
+                            <option value='EMPLOYEE'>Employee</option>
+                            <option value='ADMIN'>Admin</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 

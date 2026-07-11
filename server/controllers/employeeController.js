@@ -10,7 +10,7 @@ export const getEmployees = async (req, res) => {
         const where = {};
         if (department) where.department = department;
 
-        const employees = (await Employee.find(where)).sort({ createdAt: -1 }).populate("userId", "email role").lean();
+        const employees = await Employee.find(where).sort({ createdAt: -1 }).populate("userId", "email role").lean();
         // const result = employees.map((emp) => {
         //     ...emp,
         //     id: emp._id.toString(),
@@ -76,7 +76,7 @@ export const createEmployees = async (req, res) => {
         // Hash password
         const hashed = await bcrypt.hash(password, 10);
 
-         // Create user
+        // Create user
         const user = await User.create({
             email,
             password: hashed,
@@ -91,7 +91,7 @@ export const createEmployees = async (req, res) => {
             email,
             phone,
             position,
-            department: deductions || "Engineering",
+            department: department || "Engineering",
             basicSalary: Number(basicSalary) || 0,
             allowances: Number(allowances) || 0,
             deductions: Number(deductions) || 0,
@@ -105,11 +105,11 @@ export const createEmployees = async (req, res) => {
             employee,
         });
     } catch (error) {
-        if(error.code) {
+        if (error.code === 11000) {
             return res.status(400).json({
                 success: false,
-                message: "Email already exists"
-            })
+                message: "Email already exists",
+            });
         }
         console.error("Create employee error:", error);
 
@@ -140,7 +140,7 @@ export const updateEmployees = async (req, res) => {
             department,
             role,
             employeeStatus,
-            // password
+            password
         } = req.body;
 
         // Validation
@@ -168,24 +168,26 @@ export const updateEmployees = async (req, res) => {
         // });
 
         // Create employee
-        await Employee.findByIdAndUpdate({
-            firstName,
-            lastName,
-            email,
-            phone,
-            position,
-            department: deductions || "Engineering",
-            basicSalary: Number(basicSalary) || 0,
-            allowances: Number(allowances) || 0,
-            deductions: Number(deductions) || 0,
-            employeeStatus: employeeStatus || "ACTIVE",
-            bio: bio || "",
-        });
+        await Employee.findByIdAndUpdate(
+            id,
+            {
+                firstName,
+                lastName,
+                email,
+                phone,
+                position,
+                department: department || "Engineering",
+                basicSalary: Number(basicSalary) || 0,
+                allowances: Number(allowances) || 0,
+                deductions: Number(deductions) || 0,
+                employeeStatus: employeeStatus || "ACTIVE",
+                bio: bio || "",
+            });
 
         // Update user record
         const userUpdate = { email };
-        if(role) userUpdate.role = role;
-        if(password) userUpdate.password = await bcrypt.hash(password, 10);
+        if (role) userUpdate.role = role;
+        if (password) userUpdate.password = await bcrypt.hash(password, 10);
         await User.findByIdAndUpdate(employee.userId, userUpdate);
 
         res.status(200).json({
@@ -193,11 +195,13 @@ export const updateEmployees = async (req, res) => {
             message: "Employee record updated successfully."
         });
     } catch (error) {
-        if(error.code) {
+        console.error("Update employee error:", error);
+
+        if (error.code === 11000) {
             return res.status(400).json({
                 success: false,
-                message: "Email already exists"
-            })
+                message: "Email already exists",
+            });
         }
 
         res.status(500).json({
@@ -230,7 +234,7 @@ export const deleteEmployees = async (req, res) => {
             success: true,
             message: "Employee deleted successfully.",
         });
-        
+
     } catch (error) {
         console.error("Delete employee error:", error);
 
