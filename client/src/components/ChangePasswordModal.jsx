@@ -1,5 +1,6 @@
 import { Loader2Icon, LockIcon, SaveIcon, X } from "lucide-react";
 import { useState } from "react";
+import api from "../api/axios";
 
 const ChangePasswordModal = ({ open, onClose }) => {
     const [loading, setLoading] = useState(false);
@@ -7,9 +8,47 @@ const ChangePasswordModal = ({ open, onClose }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-    }
 
-    if(!open) return null;
+        setLoading(true);
+        setMessage({ type: "", text: "" });
+
+        const formData = new FormData(e.currentTarget);
+        const currentPassword = formData.get("currentPassword");
+        const newPassword = formData.get("newPassword");
+
+        try {
+            const { data } = await api.post("/auth/change-password", {
+                currentPassword,
+                newPassword,
+            });
+
+            if (!data.success) {
+                throw new Error(data.error || data.message || "Failed");
+            }
+
+            setMessage({
+                type: "success",
+                text: "Password changed successfully.",
+            });
+
+            e.target.reset();
+        } catch (err) {
+            setMessage({
+                type: "error",
+                text:
+                    err.response?.data?.error ||
+                    err.response?.data?.message ||
+                    err.message,
+            });
+        } finally {
+            setLoading(false);
+            setTimeout(() => {
+                setMessage({ type: "", text: "" });
+            }, 1000)
+        }
+    };
+
+    if (!open) return null;
 
     return (
         <div onClick={onClose} className='fixed inset-0 z-50 flex items-center justify-center p-4'>
@@ -30,9 +69,8 @@ const ChangePasswordModal = ({ open, onClose }) => {
                 <form onSubmit={handleSubmit} className="p-6 space-y-5">
                     {message?.text && (
                         <div className={`p-3 rounded-xl text-sm flex items-start gap-3 ${message.type === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
-                            <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${message?.type === "success" ? "bg-emerald-500" : "bg-rose-500"}`}>
-                                {message?.text}
-                            </div>
+                            <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex items-center shrink-0 ${message?.type === "success" ? "bg-emerald-500" : "bg-rose-500"}`} />
+                            {message?.text}
                         </div>
                     )}
                     <div>
@@ -48,7 +86,7 @@ const ChangePasswordModal = ({ open, onClose }) => {
                         <label className="block text-sm font-medium text-slate-700 mmb-2">New Password</label>
                         <input
                             type="password"
-                            name="currentPassword"
+                            name="newPassword"
                             required
                             className="bg-slate-50 text-slate-400 cursor-not-allowed"
                         />
