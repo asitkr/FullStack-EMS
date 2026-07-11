@@ -4,7 +4,7 @@ import { changePassword, login, session } from "../controllers/authController.js
 
 const authRouter = Router();
 
-authRouter.get("/login", login);
+authRouter.post("/login", login);
 authRouter.get("/session", protect, session);
 authRouter.post("/change-password", protect, changePassword);
 
