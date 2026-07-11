@@ -8,7 +8,7 @@ export const createPayslip = async (req, res) => {
     try {
         const { employeeId, month, year, basicSalary, allowances, deductions } = req.body;
 
-        if(!employeeId || !month || !year || !basicSalary) {
+        if (!employeeId || !month || !year || !basicSalary) {
             return res.status(400).json({
                 success: false,
                 message: "Please provide all required fields",
@@ -50,14 +50,21 @@ export const getPayslips = async (req, res) => {
         const session = req.session;
         const isAdmin = session.role === "ADMIN";
 
-        if(isAdmin) {
+        if (isAdmin) {
             const payslips = await Payslip.find().populate("employeeId").sort({ createdAt: -1 });
             const data = payslips.map(p => {
                 const obj = p.toObject();
                 return {
                     ...obj,
                     id: obj._id.toString(),
-                    employeeId: obj.employeeId._id.toString(),
+                    // employee: {
+                    //     id: obj.employeeId._id.toString(),
+                    //     firstName: obj.employeeId.firstName,
+                    //     lastName: obj.employeeId.lastName,
+                    //     email: obj.employeeId.email,
+                    //     position: obj.employeeId.position,
+                    // },
+                    employee: p.employeeId,
                 }
             })
 
@@ -68,7 +75,7 @@ export const getPayslips = async (req, res) => {
             });
         } else {
             const employee = await Employee.findOne({ userId: session.userId });
-            if(!employee) {
+            if (!employee) {
                 return res.status(404).json({
                     success: false,
                     message: "Employee not found",
@@ -103,7 +110,7 @@ export const getPayslipById = async (req, res) => {
         const { id } = req.params;
         const payslip = await Payslip.findById(id).populate("employeeId").lean();
 
-        if(!payslip) {
+        if (!payslip) {
             return res.status(404).json({
                 success: false,
                 message: "Payslip not found",

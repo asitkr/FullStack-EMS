@@ -1,5 +1,7 @@
-import { Calendar1Icon, CalendarFoldIcon, DollarSignIcon, HandCoinsIcon, Loader2, Plus, User, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "react-hot-toast";
+import { Calendar1Icon, CalendarFoldIcon, DollarSignIcon, HandCoinsIcon, Loader2, Plus, User, X } from "lucide-react";
+import api from "../../api/axios";
 
 const GeneratePayslipForm = ({ employees, onSuccess }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -13,6 +15,20 @@ const GeneratePayslipForm = ({ employees, onSuccess }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
+
+        const formData = new FormData(e.currentTarget);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            await api.post('/payslips', data);
+            setIsOpen(false);
+            onSuccess();
+        } catch (err) {
+            toast.error(err.response?.data?.message  || err.message);
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -26,7 +42,7 @@ const GeneratePayslipForm = ({ employees, onSuccess }) => {
                         <X size={20} className="cursor-pointer" />
                     </button>
                 </div>
-                <form className="space-y-4" onClick={handleSubmit}>
+                <form className="space-y-4" onSubmit={handleSubmit}>
                     <div>
                         <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
                             <User className="w-4 h-4 text-slate-400" />
