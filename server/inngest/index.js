@@ -97,7 +97,7 @@ const attendanceReminder = inngest.createFunction(
 
             return {
                 startUTC: startUTC.toISOString(),
-                endUTC: endUTC.toDateString()
+                endUTC: endUTC.toISOString()
             }
         })
 
@@ -105,7 +105,7 @@ const attendanceReminder = inngest.createFunction(
         const activeEmployees = await step.run("get-active-employees", async () => {
             const employees = await Employee.find({
                 isDeleted: false,
-                employmentStatus: "ACTIVE",
+                employeeStatus: "ACTIVE",
             }).lean();
 
             return employees.map((e) => ({
@@ -146,27 +146,47 @@ const attendanceReminder = inngest.createFunction(
         // Step 6: Send reminder emails
         if (absentEmployees.length > 0) {
             await step.run("send-reminder-emails", async () => {
-                const emailPromises = absentEmployees.map(async (emp) => {
-                    // send email
-                    await sendEmail({
+                const emailPromises = absentEmployees.map((emp) => {
+                    return sendEmail({
                         to: emp.email,
                         subject: "Attendance Reminder - Please Mark Your Attendance",
-                        body: `<div style="max-width: 600px; font-family: Arial, sans-serif;>
-                            <h2>Hi ${emp.firstName},👋</h2>
-                            <p style="font-size: 16px;">We noticed you haven't marked your attendance yet today.</p>
-                            <p style="font-size: 16px;">The deadline was <strong>11:30AM</strong> and your attendance is still missing</p>
-                            <p style="font-size: 16px;">Please check in as soon as possible or contact your admin if you're facing any issues.</p>
-                            <br />
-                            <p style="font-size: 14px; color: #666;">Department: ${emp.department}</p>
-                            <br />
-                            <p style="font-size: 16px;">Best Regards,</p>
-                            <p style="font-size: 16px:"><strong>QuickEMS</strong></p>
-                        </div>`
-                    })
-                })
+                        body: `
+                    <div style="max-width:600px;font-family:Arial,sans-serif;">
+                        <h2>Hi ${emp.firstName}, 👋</h2>
+
+                        <p style="font-size:16px;">
+                            We noticed you haven't marked your attendance yet today.
+                        </p>
+
+                        <p style="font-size:16px;">
+                            The deadline was <strong>11:30 AM</strong> and your attendance is still missing.
+                        </p>
+
+                        <p style="font-size:16px;">
+                            Please check in as soon as possible or contact your administrator if you're facing any issues.
+                        </p>
+
+                        <br />
+
+                        <p style="font-size:14px;color:#666;">
+                            Department: ${emp.department}
+                        </p>
+
+                        <br />
+
+                        <p style="font-size:16px;">Best Regards,</p>
+                        <p style="font-size:16px;"><strong>QuickEMS</strong></p>
+                    </div>
+                `,
+                    });
+                });
+
                 await Promise.all(emailPromises);
-                return { emailsSent: absentEmployees.length }
-            })
+
+                return {
+                    emailsSent: emailPromises.length,
+                };
+            });
         }
         return {
             totalActive: activeEmployees.length,
