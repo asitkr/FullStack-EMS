@@ -38,7 +38,7 @@ export const clockInOut = async (req, res) => {
             const attendance = await Attendance.create({
                 employeeId: employee._id,
                 date: today,
-                clockIn: now,
+                checkIn: now,
                 isLate: isLate ? "LATE" : "PRESENT",
             });
 
@@ -56,12 +56,12 @@ export const clockInOut = async (req, res) => {
                 data: attendance,
                 message: "Clock-in successful",
             })
-        } else if(!existing.clockOut) {
-            const checkInTime = new Date(existing.clockIn).getTime();
+        } else if(!existing.checkOut) {
+            const checkInTime = new Date(existing.checkIn).getTime();
             const diffMs = now.getTime() - checkInTime;
             const diffHours = diffMs / (1000 * 60 * 60); // Convert milliseconds to hours
 
-            existing.clockOut = now;
+            existing.checkOut = now;
 
             // Compute working hours and day type
             const workingHours = parseFloat(diffHours.toFixed(2));
