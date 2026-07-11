@@ -1,5 +1,7 @@
+import { toast } from 'react-hot-toast';
 import { useCallback, useEffect, useState } from "react";
-import { dummyAttendanceData } from "../assets/assets";
+
+import api from '../api/axios';
 import Loading from "../components/Loading";
 import CheckInButton from "../components/attendance/CheckInButton";
 import AttendanceStats from "../components/attendance/AttendanceStats";
@@ -11,11 +13,18 @@ const Attendance = () => {
   const [isDeleted, setIsDeleted] = useState(false);
 
   const fetchData = useCallback(async () => {
-    setHistory(dummyAttendanceData);
-    setTimeout(() => {
+    try {
+      setLoading(true);
+      const res = await api.get('/attendance');
+      const json = res.data;
+      setHistory(json.data || []);
+      if(json.employee?.isDeleted) setIsDeleted(true);
+    } catch (err) {
+      toast.error(err.response?.data?.message  || err.message);
+    } finally {
       setLoading(false);
-    }, 1000);
-  })
+    }
+  }, []);
 
   useEffect(() => {
     fetchData();

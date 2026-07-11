@@ -137,11 +137,11 @@ const attendanceReminder = inngest.createFunction(
                 }
             }).lean();
 
-            return leaves.map((a) => a.employeeId.toString())
+            return attendance.map((a) => a.employeeId.toString())
         })
 
         // Step 5: Filter absent employees (not on leave & not checked in)
-        const absentEmployees = activeEmployees.filter((emp) => !onLeaveIds.includes(emp._id) && !checkedInIds.includes(emp._ids))
+        const absentEmployees = activeEmployees.filter((emp) => !onLeaveIds.includes(emp._id) && !checkedInIds.includes(emp._id))
 
         // Step 6: Send reminder emails
         if (absentEmployees.length > 0) {
