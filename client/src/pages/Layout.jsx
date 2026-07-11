@@ -7,7 +7,7 @@ const Layout = () => {
   const {user, loading} = useAuth();
 
   if(loading) return <Loading />
-  if(!user) return <Navigate to='/' />
+  if(!user) return <Navigate to='/login' replace />
 
   return (
     <div className="flex h-screen bg-linear-to-br from-slate-50 via-white to-indigo-50/30">

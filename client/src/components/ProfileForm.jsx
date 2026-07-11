@@ -1,5 +1,7 @@
-import { Loader2, Save, User } from "lucide-react";
 import { useState } from "react";
+import { toast } from "react-hot-toast";
+import { Loader2, Save, User } from "lucide-react";
+import api from "../api/axios";
 
 const ProfileForm = ({ initialData, onSuccess }) => {
     const [loading, setLoading] = useState(false);
@@ -8,6 +10,20 @@ const ProfileForm = ({ initialData, onSuccess }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
+        setError('');
+        setMessage('');
+
+        const formData = new FormData(e.currentTarget);
+        try {
+            await api.post('/profile', formData)
+            setMessage('Profile update successfully');
+            onSuccess?.();
+        } catch (err) {
+            toast.error(err.response?.data?.message  || err.message);
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
